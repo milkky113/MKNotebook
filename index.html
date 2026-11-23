@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<!-- 版本：2026-11-17 #1 20:41 標題列統一、待辦列緊湊 -->
+<!-- 重新編譯 Tailwind：tailwindcss@3.4.17 -c tailwind.config.js（darkMode:class；顏色 muji.*、字型 serif/sans、動畫 fade-in-up/slide-in-right）-i in.css -o out.css --minify，再貼回 style.html 的 #tailwind-built；content 要掃 index.html、core.html、features.html、sync.html 四個檔（class 寫在 JS 字串裡） -->
+<html lang="zh-TW" class="h-full bg-[#F7F5F0]">
+<head>
+    <meta charset="UTF-8">
+    <meta name="referrer" content="no-referrer">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>MK手帳</title>
+    <!-- 網站圖示（favicon）與 Chrome「安裝成應用程式」用的圖示，內嵌data URI不用額外檔案 -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src https://cdnjs.cloudflare.com https://fonts.gstatic.com; img-src 'self' data: blob: https://drive.google.com https://*.googleusercontent.com; connect-src 'self' https://script.google.com https://script.googleusercontent.com; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
+    <meta name="theme-color" content="#8C2B2B">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="MK手帳">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+    <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Noto Serif TC & Noto Sans TC -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Noto+Serif+TC:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- ================================================================= -->
+    <!-- MODULE 1: STYLES & THEME CONFIGURATION                          -->
+    <!-- ================================================================= -->
+
+    <link rel="stylesheet" href="style.css?v=202611231706">
+</head>
+<body class="min-h-screen flex flex-col antialiased selection:bg-muji-paper selection:text-muji-red overflow-x-hidden">
+
+    <!-- ================================================================= -->
+    <!-- MODULE 2: HEADER & GLOBAL NAVIGATION                              -->
+    <!-- ================================================================= -->
+    <header class="bg-white border-b border-muji-border sticky top-0 z-30 transition-colors">
+        <div class="max-w-[min(96vw,2000px)] mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <!-- Brand Title -->
+                <div class="flex items-center space-x-3 cursor-pointer shrink-0" onclick="switchTab('home')">
+                    <span class="w-7 h-7 bg-muji-red text-white flex items-center justify-center rounded"><i class="fa-solid fa-book-open text-xs"></i></span>
+                    <h1 class="font-serif text-lg tracking-wider font-semibold text-muji-text whitespace-nowrap">MK手帳</h1>
+                </div>
+
+                <!-- Desktop Navigation Tabs -->
+                <nav class="hidden md:flex space-x-1">
+                    <button onclick="switchTab('home')" id="tab-btn-home" class="px-4 py-2 text-sm font-medium rounded-md transition-colors text-muji-red bg-muji-paper">
+                        <i class="fa-regular fa-compass mr-1.5"></i>首頁
+                    </button>
+                    <button onclick="switchTab('calendar')" id="tab-btn-calendar" class="px-4 py-2 text-sm font-medium rounded-md transition-colors text-muji-text hover:bg-muji-paper">
+                        <i class="fa-regular fa-calendar-days mr-1.5"></i>行事曆
+                    </button>
+                    <button onclick="switchTab('diary')" id="tab-btn-diary" class="px-4 py-2 text-sm font-medium rounded-md transition-colors text-muji-text hover:bg-muji-paper">
+                        <i class="fa-solid fa-book-bookmark mr-1.5"></i>日記與打卡
+                    </button>
+                </nav>
+
+                <!-- Actions Right：圖示鈕同尺寸，手機與電腦同一套；同步狀態點疊在「立即更新」右上角 -->
+                <div class="flex items-center gap-0.5 sm:gap-1">
+                    <button onclick="undoLastAction()" id="undo-last-action-btn" class="hidden w-9 h-9 flex items-center justify-center rounded-full text-muji-red hover:bg-muji-paper transition-colors" title="復原上一步">
+                        <i class="fa-solid fa-rotate-left text-sm"></i>
+                    </button>
+                    <button onclick="toggleSearch()" class="w-9 h-9 inline-flex items-center justify-center rounded-full text-muji-text hover:bg-muji-paper transition-colors" title="搜尋手帳">
+                        <i class="fa-solid fa-magnifying-glass text-sm"></i>
+                    </button>
+                    <button onclick="refreshAllFromGoogle()" id="manual-refresh-btn" class="relative w-9 h-9 inline-flex items-center justify-center rounded-full text-muji-text hover:bg-muji-paper transition-colors" title="立即更新（日曆、工作、雲端資料）">
+                        <i id="manual-refresh-icon" class="fa-solid fa-rotate text-sm"></i>
+                        <span id="global-sync-dot" class="absolute right-1.5 top-1.5 w-2 h-2 rounded-full bg-muji-muted ring-2 ring-white dark:ring-[#2D2A27]"></span>
+                    </button>
+                    <button onclick="openSettingsModal()" class="w-9 h-9 inline-flex items-center justify-center rounded-full text-muji-text hover:bg-muji-paper transition-colors" title="設定" aria-label="設定">
+                        <i class="fa-solid fa-gear text-sm"></i>
+                    </button>
+                    <div class="relative">
+                        <button onclick="toggleHeaderMenu(event)" class="w-9 h-9 inline-flex items-center justify-center rounded-full text-muji-text hover:bg-muji-paper transition-colors" title="更多" aria-haspopup="menu">
+                            <i class="fa-solid fa-ellipsis text-sm"></i>
+                        </button>
+                        <div id="header-more-menu" class="hidden absolute right-0 top-full mt-1 z-50 bg-white border border-muji-border rounded-md shadow-lg py-1 w-40 text-sm">
+                            <button onclick="openTrashModal(); closeHeaderMenu()" class="w-full text-left px-3 py-2 hover:bg-muji-paper"><i class="fa-solid fa-trash-can w-4 mr-1"></i>回收桶</button>
+                            <button type="button" onclick="toggleDarkMode()" id="dark-mode-toggle-btn" class="w-full text-left px-3 py-2 hover:bg-muji-paper"><i class="fa-solid fa-moon w-4 mr-1"></i><span>深色主題</span></button>
+                            <button type="button" onclick="logoutWeb()" id="logout-btn" class="hidden w-full text-left px-3 py-2 hover:bg-muji-paper"><i class="fa-solid fa-right-from-bracket w-4 mr-1"></i><span>登出</span></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search Overlay Component -->
+        <div id="search-bar-container" class="hidden border-t border-muji-border bg-muji-paper px-4 py-3">
+            <div class="max-w-3xl mx-auto flex items-center gap-2">
+                <i class="fa-solid fa-magnifying-glass text-muji-muted"></i>
+                <input type="text" id="global-search-input" aria-label="搜尋手帳" oninput="handleSearch()" placeholder="搜尋待辦、日記、行程或隨記內容..." class="w-full bg-white border border-muji-border rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-muji-text">
+                <button onclick="toggleSearch()" class="text-xs text-muji-muted hover:text-muji-text px-2">關閉</button>
+            </div>
+            <div id="search-results" class="max-w-3xl mx-auto mt-2 hidden bg-white rounded-md border border-muji-border max-h-60 overflow-y-auto divide-y divide-muji-paper text-sm shadow-md"></div>
+        </div>
+    </header>
+
+    <!-- 手機版底部導覽列：固定在畫面下方，向下捲動時滑出隱藏、稍微向上捲動就立刻滑入出現 -->
+    <nav id="mobile-bottom-nav" style="padding-bottom: env(safe-area-inset-bottom);" class="md:hidden fixed bottom-0 inset-x-0 z-30 bg-white border-t border-muji-border flex text-center text-xs transition-transform duration-300 ease-out">
+        <button onclick="switchTab('home')" id="mob-tab-home" class="flex-1 py-2.5 font-medium border-t-2 border-muji-red text-muji-red">
+            <i class="fa-regular fa-compass block text-base mb-0.5"></i>首頁
+        </button>
+        <button onclick="switchTab('calendar')" id="mob-tab-calendar" class="flex-1 py-2.5 font-medium border-t-2 border-transparent text-muji-muted">
+            <i class="fa-regular fa-calendar-days block text-base mb-0.5"></i>行事曆
+        </button>
+        <button onclick="switchTab('diary')" id="mob-tab-diary" class="flex-1 py-2.5 font-medium border-t-2 border-transparent text-muji-muted">
+            <i class="fa-solid fa-book-bookmark block text-base mb-0.5"></i>日記與打卡
+        </button>
+    </nav>
+
+    <!-- MAIN CONTAINER FOR VIEW MODULES -->
+    <main class="flex-1 max-w-[min(96vw,2000px)] w-full mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-24 md:pb-6">
+
+        <!-- ============================================================= -->
+        <!-- MODULE 3: HOME VIEW PAGE (首頁)                              -->
+        <!-- ============================================================= -->
+        <div id="page-home" class="space-y-6 animate-fade-in-up">
+            <!-- Weather & Daily Quote Banner -->
+            <div class="muji-card p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white">
+                <div class="flex items-center space-x-6 text-sm" id="home-weather-aqi-row">
+                    <div class="flex items-center space-x-2" id="home-weather-block">
+                        <i class="fa-solid fa-cloud-sun text-muji-ochre text-lg"></i>
+                        <span id="home-weather-text" class="text-muji-muted">天氣載入中...</span>
+                    </div>
+                    <div class="h-4 w-px bg-muji-border"></div>
+                    <div class="flex items-center space-x-2" id="home-aqi-block">
+                        <i class="fa-solid fa-leaf text-muji-olive text-lg"></i>
+                        <span>空氣品質 <span id="home-aqi-badge" class="bg-stone-100 text-stone-500 text-xs px-2 py-0.5 rounded font-medium">載入中...</span></span>
+                    </div>
+                    <button onclick="refreshWeatherAndAqi(true)" title="重新整理天氣/空品" class="text-muji-muted hover:text-muji-text text-xs"><i class="fa-solid fa-rotate"></i></button>
+                </div>
+                <div class="text-base text-muji-text font-serif border-l-2 border-muji-red pl-3 md:border-l-0 md:pl-0" id="home-daily-quote">
+                    「簡約不是妥協，而是對生活品質的精確提煉。」
+                </div>
+            </div>
+
+            <!-- Home Layout (Left: Mini Cal + Focus, Right: Todos & Memos) -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- Left Sidebar: Mini Calendar & Today Focus -->
+                <div class="lg:col-span-4 space-y-6">
+                    <div class="muji-card p-4">
+        <!-- 小月曆頂部控制區：標題、今日按鈕、前後月切換、指定年月日選擇 -->
+        <div class="flex justify-between items-center mb-3 pb-2 border-b border-stone-200/60">
+            <div class="flex items-center space-x-2">
+                <h2 class="font-serif font-semibold text-sm text-muji-text">導航</h2>
+                <!-- 一鍵回到今天 -->
+                <button onclick="resetMiniCalToToday()" title="回到今天" class="px-1.5 py-0.5 text-[11px] bg-stone-100 hover:bg-stone-200 text-stone-600 rounded transition font-sans">
+                    今
+                </button>
+            </div>
+            
+            <div class="flex items-center space-x-1 text-xs">
+                <!-- 上一個月 -->
+                <button onclick="changeMiniCalMonth(-1)" title="上一月" class="w-6 h-6 flex items-center justify-center hover:bg-stone-100 rounded text-stone-500 transition">
+                    <i class="fa-solid fa-chevron-left text-[11px]"></i>
+                </button>
+                
+                <!-- 年月顯示標題（點擊可展開年月日選單） -->
+                <div class="relative flex items-center cursor-pointer group px-1 py-0.5 hover:bg-stone-100 rounded transition">
+                    <span id="mini-cal-month-title-home" class="whitespace-nowrap font-medium text-xs text-muji-text group-hover:text-muji-red transition"></span>
+                    <i class="fa-solid fa-caret-down text-[11px] text-stone-400 ml-1 group-hover:text-muji-red"></i>
+                    
+                    <!-- 隱形原生日期選擇器：實現點擊年月直接選擇指定「年、月、日」快速跳轉 -->
+                    <input type="date" id="mini-cal-jump-input-home" onclick="try{this.showPicker()}catch(e){}" onchange="jumpToMiniCalDate(this.value)" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full" title="選擇指定年月日">
+                </div>
+
+                <!-- 下一個月 -->
+                <button onclick="changeMiniCalMonth(1)" title="下一月" class="w-6 h-6 flex items-center justify-center hover:bg-stone-100 rounded text-stone-500 transition">
+                    <i class="fa-solid fa-chevron-right text-[11px]"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- 月曆網格呈現區 -->
+        <div id="mini-calendar-home" class="text-center text-xs"></div>
+    </div>
+
+                    <!-- Today Focus Agenda -->
+                    <div class="muji-card p-4">
+                        <h3 class="font-serif font-semibold text-sm mb-3 flex items-center justify-between">
+                            <span><i class="fa-regular fa-flag text-muji-red mr-2"></i>焦點行程</span>
+                            <span id="home-today-date-str" class="text-xs font-sans text-muji-muted"></span>
+                        </h3>
+                        <div id="home-today-events-list" class="space-y-2 text-xs"></div>
+                    </div>
+                </div>
+
+                <!-- Right Main Column: Todos & Memos -->
+                <div class="lg:col-span-8 space-y-6">
+                    <!-- TODO LIST SECTION -->
+                    <div class="muji-card p-5">
+                        <div class="flex justify-between items-center mb-4">
+                            <div>
+                                <h2 class="font-serif font-semibold text-base">待辦事項</h2>
+                            </div>
+                            <button onclick="openTodoModal()" class="muji-btn muji-btn-primary">
+                                <i class="fa-solid fa-plus text-xs"></i> 新增
+                            </button>
+                        </div>
+                        <div id="home-tag-filter-row" class="flex flex-wrap gap-1.5 items-center mb-3"></div>
+                        <div id="todo-list-container" class="divide-y divide-muji-border/60"></div>
+                    </div>
+
+                    <!-- QUICK MEMOS SECTION -->
+                    <div class="muji-card p-5">
+                        <div class="flex justify-between items-center mb-4">
+                            <div>
+                                <h2 class="font-serif font-semibold text-base">備忘隨記</h2>
+                            </div>
+                            <button onclick="openNoteModal()" class="muji-btn">
+                                <i class="fa-solid fa-plus text-xs"></i> 新增
+                            </button>
+                        </div>
+                        <div id="memo-grid-container" class="grid grid-cols-1 sm:grid-cols-2 gap-4"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================= -->
+        <!-- MODULE 4: DIARY & HABITS VIEW PAGE (日記與打卡)                -->
+        <!-- ============================================================= -->
+        <div id="page-diary" class="hidden space-y-6 animate-fade-in-up">
+            <!-- Habit Tracker Banner -->
+            <div class="muji-card p-5">
+                <div class="flex justify-between items-center mb-4">
+                    <div class="flex items-center space-x-2">
+                        <i class="fa-solid fa-circle-check text-muji-red"></i>
+                        <h2 class="font-serif font-semibold text-base">習慣打卡</h2>
+                    </div>
+                    <button onclick="openHabitModal()" class="muji-btn text-xs">
+                        <i class="fa-solid fa-plus"></i> 新增
+                    </button>
+                </div>
+                <div id="habit-date-hint" class="text-xs text-muji-muted mb-1"></div>
+                <div id="habit-tracker-row" class="flex space-x-4 overflow-x-auto pb-2"></div>
+            </div>
+
+            <!-- Diary Grid Layout -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- Left Sidebar: Diary Calendar -->
+<div class="lg:col-span-4 space-y-6">
+    <div class="muji-card p-4">
+        <!-- 小月曆頂部控制區：標題、今日按鈕、前後月切換、指定年月日選擇 -->
+        <div class="flex justify-between items-center mb-3 pb-2 border-b border-stone-200/60">
+            <div class="flex items-center space-x-2">
+                <h2 class="font-serif font-semibold text-sm text-muji-text">日記/打卡</h2>
+                <button onclick="resetMiniCalToToday()" title="回到今天" class="px-1.5 py-0.5 text-[11px] bg-stone-100 hover:bg-stone-200 text-stone-600 rounded transition font-sans">
+                    今
+                </button>
+            </div>
+            
+            <div class="flex items-center space-x-1 text-xs">
+                <!-- 上一個月 -->
+                <button onclick="changeMiniCalMonth(-1)" title="上一月" class="w-6 h-6 flex items-center justify-center hover:bg-stone-100 rounded text-stone-500 transition">
+                    <i class="fa-solid fa-chevron-left text-[11px]"></i>
+                </button>
+                
+                <!-- 年月顯示標題（點擊可展開年月日選單） -->
+                <div class="relative flex items-center cursor-pointer group px-1 py-0.5 hover:bg-stone-100 rounded transition">
+                    <span id="mini-cal-month-title-diary" class="whitespace-nowrap font-medium text-xs text-muji-text group-hover:text-muji-red transition"></span>
+                    <i class="fa-solid fa-caret-down text-[11px] text-stone-400 ml-1 group-hover:text-muji-red"></i>
+                    
+                    <input type="date" id="mini-cal-jump-input-diary" onclick="try{this.showPicker()}catch(e){}" onchange="jumpToMiniCalDate(this.value)" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full" title="選擇指定年月日">
+                </div>
+
+                <!-- 下一個月 -->
+                <button onclick="changeMiniCalMonth(1)" title="下一月" class="w-6 h-6 flex items-center justify-center hover:bg-stone-100 rounded text-stone-500 transition">
+                    <i class="fa-solid fa-chevron-right text-[11px]"></i>
+                </button>
+            </div>
+        </div>
+
+        <div id="mini-calendar-diary" class="text-center text-xs"></div>
+    </div>
+</div>
+
+                <!-- Right Diary Section (Timeline Feed vs Photo Wall Grid) -->
+                <div class="lg:col-span-8 space-y-6">
+                    <div class="muji-card p-5">
+                        <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-3 mb-6 border-b border-muji-border pb-4">
+                            <div>
+                                <h2 class="font-serif font-semibold text-base">生活日記</h2>
+                            </div>
+                            <div class="flex flex-wrap items-center justify-end gap-2">
+                                <!-- View Switcher -->
+                                <div class="bg-muji-paper p-1 rounded-lg text-xs flex space-x-1 w-full sm:w-auto">
+                                    <button onclick="switchDiaryView('timeline')" id="diary-mode-timeline" class="flex-1 sm:flex-none px-3 py-1 rounded-md bg-white text-muji-text font-medium shadow-sm">
+                                        <i class="fa-solid fa-timeline mr-1"></i>時光軸
+                                    </button>
+                                    <button onclick="switchDiaryView('photowall')" id="diary-mode-photowall" class="flex-1 sm:flex-none px-3 py-1 rounded-md text-muji-muted">
+                                        <i class="fa-solid fa-border-all mr-1"></i>相片牆
+                                    </button>
+                                </div>
+                                <button onclick="openDiaryExportModal()" class="muji-btn flex-1 sm:flex-none justify-center">
+                                    <i class="fa-solid fa-file-pdf"></i> 匯出
+                                </button>
+                                <button onclick="openDiaryModal()" class="muji-btn muji-btn-primary flex-1 sm:flex-none justify-center">
+                                    <i class="fa-solid fa-plus"></i> 新增
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 本月心情熱力圖 -->
+                        <details id="mood-heatmap-card" class="mb-5 pb-4 border-b border-muji-border/60">
+                            <summary class="cursor-pointer text-xs font-medium text-muji-text mb-2 select-none"><i class="fa-regular fa-face-smile mr-1"></i>心情熱力圖</summary>
+                            <div class="flex items-center justify-between mb-2">
+                                <button onclick="shiftMoodMonth(-1)" class="muji-btn text-xs" title="上個月"><i class="fa-solid fa-chevron-left"></i></button>
+                                <span class="text-xs font-medium text-muji-text"><i class="fa-regular fa-face-smile mr-1"></i><span id="mood-heatmap-label"></span> 心情</span>
+                                <button onclick="shiftMoodMonth(1)" class="muji-btn text-xs" title="下個月"><i class="fa-solid fa-chevron-right"></i></button>
+                            </div>
+                            <div id="mood-heatmap" class="max-w-xs mx-auto"></div>
+                            <div id="mood-heatmap-legend" class="flex flex-wrap justify-center gap-x-3 gap-y-1 mt-2 text-[11px] text-muji-muted"></div>
+                        </details>
+
+                        <!-- 週切換 -->
+                        <div class="flex items-center justify-between mb-4 pb-3 border-b border-muji-border/60">
+                            <button onclick="navigateDiaryWeek(-1)" class="muji-btn text-xs"><i class="fa-solid fa-chevron-left mr-1"></i>上週</button>
+                            <span id="diary-week-range-label" class="text-xs font-medium text-muji-text"></span>
+                            <button onclick="navigateDiaryWeek(1)" class="muji-btn text-xs">下週<i class="fa-solid fa-chevron-right ml-1"></i></button>
+                        </div>
+
+                        <!-- Timeline Feed Container -->
+                        <div id="diary-timeline-container" class="space-y-6 relative before:absolute before:inset-0 before:left-4 before:w-0.5 before:bg-muji-border"></div>
+
+                        <!-- Photo Wall Container -->
+                        <div id="diary-photowall-container" class="hidden grid grid-cols-2 sm:grid-cols-3 gap-4"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================= -->
+        <!-- MODULE 5: CALENDAR VIEW PAGE (行事曆)                          -->
+        <!-- ============================================================= -->
+<div id="page-calendar" class="hidden space-y-6 animate-fade-in-up">
+    <!-- 行事曆頁面頂部列 (標題、視角切換、今天、新增行程) -->
+    <div class="muji-card p-4 flex flex-col md:flex-row justify-between items-center gap-4">
+        <div class="flex items-center space-x-3">
+            <h2 class="font-serif font-semibold text-base text-muji-text">行事曆</h2>
+            <div class="flex bg-muji-paper p-1 rounded-lg text-xs space-x-1 border border-muji-border">
+                <button onclick="changeCalView('day')" id="view-btn-day" class="px-3 py-1 rounded-md text-muji-muted hover:text-muji-text transition-colors">日行程</button>
+                <button onclick="changeCalView('week')" id="view-btn-week" class="px-3 py-1 rounded-md bg-white text-muji-text font-medium shadow-sm">週行程</button>
+                <button onclick="changeCalView('month')" id="view-btn-month" class="px-3 py-1 rounded-md text-muji-muted hover:text-muji-text transition-colors">月行程</button>
+            </div>
+        </div>
+
+        <div class="flex items-center space-x-3">
+            <button onclick="jumpCalToToday()" class="px-3 py-1.5 text-xs bg-muji-paper hover:bg-stone-200/60 rounded border border-muji-border text-muji-text transition-colors">
+                <i class="fa-solid fa-calendar-day mr-1"></i> 今天
+            </button>
+            <button onclick="openEventModal()" class="muji-btn muji-btn-primary text-xs px-3 py-1.5 rounded flex items-center gap-1.5">
+                <i class="fa-solid fa-plus text-xs"></i> 新增
+            </button>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <!-- 左側側邊欄：小月曆與日期選擇跳轉 -->
+        <div class="lg:col-span-4 space-y-6">
+            <div class="muji-card p-4">
+                <!-- 小月曆頂部控制區：標題、今日按鈕、前後月切換、指定年月日選擇 -->
+                <div class="flex justify-between items-center mb-3 pb-2 border-b border-stone-200/60">
+                    <div class="flex items-center space-x-2">
+                        <h2 class="font-serif font-semibold text-sm text-muji-text">行程</h2>
+                    </div>
+
+                    <div class="flex items-center space-x-1 text-xs">
+                        <!-- 上一個月 -->
+                        <button onclick="changeMiniCalMonth(-1)" title="上一月" class="w-6 h-6 flex items-center justify-center hover:bg-stone-100 rounded text-stone-500 transition">
+                            <i class="fa-solid fa-chevron-left text-[11px]"></i>
+                        </button>
+
+                        <!-- 年月顯示標題（點擊可展開年月日選單） -->
+                        <div class="relative flex items-center cursor-pointer group px-1 py-0.5 hover:bg-stone-100 rounded transition">
+                            <span id="mini-cal-month-title" class="whitespace-nowrap font-medium text-xs text-muji-text group-hover:text-muji-red transition"></span>
+                            <i class="fa-solid fa-caret-down text-[11px] text-stone-400 ml-1 group-hover:text-muji-red"></i>
+
+                            <input type="date" id="mini-cal-jump-input" onclick="try{this.showPicker()}catch(e){}" onchange="setGlobalDate(this.value)" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full" title="選擇指定年月日">
+                        </div>
+
+                        <!-- 下一個月 -->
+                        <button onclick="changeMiniCalMonth(1)" title="下一月" class="w-6 h-6 flex items-center justify-center hover:bg-stone-100 rounded text-stone-500 transition">
+                            <i class="fa-solid fa-chevron-right text-[11px]"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="mini-calendar-main" class="text-center text-xs"></div>
+            </div>
+        </div>
+
+        <!-- 右側主要行事曆面板 -->
+        <div class="lg:col-span-8">
+            <!-- 日視角容器 (Day View) -->
+            <div id="cal-view-day-container" class="muji-card p-5 hidden space-y-4"></div>
+
+            <!-- 週視角容器 (Week View - MUJI Spread) -->
+            <div id="cal-view-week-container" class="muji-card p-5">
+                <div class="flex justify-between items-center mb-4 pb-2 border-b border-muji-border">
+                    <button onclick="navigateCalWeek(-1)" class="px-3 py-1 bg-muji-paper hover:bg-stone-200/60 text-xs rounded border border-muji-border text-muji-text transition-colors">
+                        <i class="fa-solid fa-chevron-left mr-1"></i> 上週
+                    </button>
+                    <div class="text-xs text-muji-muted flex items-center">
+                        <i class="fa-solid fa-book-open mr-1"></i> <span id="week-view-range-label" class="font-medium text-muji-text">MK手帳跨頁</span>
+                    </div>
+                    <button onclick="navigateCalWeek(1)" class="px-3 py-1 bg-muji-paper hover:bg-stone-200/60 text-xs rounded border border-muji-border text-muji-text transition-colors">
+                        下週 <i class="fa-solid fa-chevron-right ml-1"></i>
+                    </button>
+                </div>
+                <div id="muji-week-spread" class="grid grid-cols-1 md:grid-cols-2 gap-4 divide-y md:divide-y-0 md:divide-x divide-muji-border">
+                    <div class="space-y-4 pr-0 md:pr-2" id="week-left-col"></div>
+                    <div class="space-y-4 pt-4 md:pt-0 md:pl-4" id="week-right-col"></div>
+                </div>
+            </div>
+
+            <!-- 月視角容器 (Month View) -->
+            <div id="cal-view-month-container" class="muji-card p-4 hidden space-y-3">
+                <div class="flex justify-between items-center pb-2 border-b border-muji-border">
+                    <button onclick="navigateCalMonth(-1)" class="px-3 py-1 bg-muji-paper hover:bg-stone-200/60 text-xs rounded border border-muji-border text-muji-text transition-colors">
+                        <i class="fa-solid fa-chevron-left mr-1"></i> 上月
+                    </button>
+                    <span id="month-view-label" class="font-serif font-semibold text-sm text-muji-text"></span>
+                    <button onclick="navigateCalMonth(1)" class="px-3 py-1 bg-muji-paper hover:bg-stone-200/60 text-xs rounded border border-muji-border text-muji-text transition-colors">
+                        下月 <i class="fa-solid fa-chevron-right ml-1"></i>
+                    </button>
+                </div>
+                <div>
+                    <div class="grid grid-cols-7 gap-px bg-muji-border rounded-t overflow-hidden border border-muji-border">
+                        <div class="bg-muji-paper py-2 text-center text-xs font-medium text-muji-muted">一</div>
+                        <div class="bg-muji-paper py-2 text-center text-xs font-medium text-muji-muted">二</div>
+                        <div class="bg-muji-paper py-2 text-center text-xs font-medium text-muji-muted">三</div>
+                        <div class="bg-muji-paper py-2 text-center text-xs font-medium text-muji-muted">四</div>
+                        <div class="bg-muji-paper py-2 text-center text-xs font-medium text-muji-muted">五</div>
+                        <div class="bg-muji-paper py-2 text-center text-xs font-medium text-muji-red">六</div>
+                        <div class="bg-muji-paper py-2 text-center text-xs font-medium text-muji-red">日</div>
+                    </div>
+                    <!-- 大月曆格子容器：自動彈性調整高度 -->
+                    <div id="month-grid-cells" class="grid grid-cols-7 gap-px bg-muji-border border-b border-x border-muji-border"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+    </main>
+
+
+    <!-- ================================================================= -->
+    <!-- MODULE 7: MODAL DIALOGS COLLECTION                                -->
+    <!-- ================================================================= -->
+    
+    <!-- 7.1 TODO MODAL -->
+    <div id="todo-modal" class="fixed inset-0 bg-black/30 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4" onclick="if(event.target===this) closeModal('todo-modal')">
+        <div class="bg-white rounded-lg max-w-lg w-full p-6 space-y-4 muji-card max-h-[90dvh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b border-muji-border pb-3">
+                <h3 id="todo-modal-title" class="font-serif font-semibold text-base">新增待辦</h3>
+                <button onclick="closeModal('todo-modal')" class="text-muji-muted hover:text-muji-text"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="todo-form" onsubmit="handleSaveTodo(event)" class="space-y-3 text-sm">
+                <input type="hidden" id="todo-id">
+                <div>
+                    <label for="todo-title" class="block text-xs font-medium text-muji-muted mb-1">待辦事項<span class="text-muji-red/70 ml-0.5" title="必填">•</span></label>
+                    <input type="text" id="todo-title" required placeholder="例如：購買文具、整理會議簡報" class="w-full border border-muji-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-muji-text">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label for="todo-date" class="block text-xs font-medium text-muji-muted mb-1">日期</label>
+                        <input type="date" id="todo-date" oninput="syncTodoRepeatState()" class="w-full border border-muji-border rounded px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-muji-text">
+                    </div>
+                    <div>
+                        <label for="todo-time" class="block text-xs font-medium text-muji-muted mb-1">時間</label>
+                        <input type="time" id="todo-time" class="w-full border border-muji-border rounded px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-muji-text">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label for="todo-person" class="block text-xs font-medium text-muji-muted mb-1">參與人員</label>
+                        <input type="text" id="todo-person" placeholder="例如：小明、團隊" class="w-full border border-muji-border rounded px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-muji-text">
+                    </div>
+                    <div>
+                        <label for="todo-location" class="block text-xs font-medium text-muji-muted mb-1">地點</label>
+                        <input type="text" id="todo-location" placeholder="例如：301會議室" class="w-full border border-muji-border rounded px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-muji-text">
+                    </div>
+                </div>
+                <div>
+                    <label for="todo-image-file" class="block text-xs font-medium text-muji-muted mb-1">上傳圖片</label>
+                    <input type="file" id="todo-image-file" accept="image/*" onchange="handleImageFileSelect(this, 'todo-img-preview', 'todo-image-data')" class="w-full text-xs text-muji-muted file:mr-2 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:bg-muji-paper file:text-muji-text hover:file:bg-muji-border">
+                    <input type="hidden" id="todo-image-data">
+                    <div id="todo-img-preview" class="mt-2 hidden relative w-20 h-20">
+                        <img alt="待辦圖片預覽" class="w-20 h-20 object-cover rounded border border-muji-border">
+                        <button type="button" onclick="clearImagePreview('todo-img-preview', 'todo-image-data', 'todo-image-file')" class="absolute -top-2 -right-2 bg-muji-red text-white rounded-full w-5 h-5 flex items-center justify-center text-[11px]"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-muji-muted mb-1">標籤（選色後輸入，按 Enter 新增）</label>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <input type="text" id="todo-tag-input" onkeydown="if(event.key==='Enter'){event.preventDefault(); addTagFromInput('todo-tag-input','todo-tag-chips');}" placeholder="例如：教學、行政" class="flex-1 min-w-[7rem] border border-muji-border rounded px-3 py-1.5 text-xs">
+                        <div id="todo-tag-chips-color-picker" class="flex gap-1.5 shrink-0"></div>
+                    </div>
+                    <div id="todo-tag-chips" class="flex flex-wrap gap-1.5 mt-1.5"></div>
+                </div>
+                <div class="grid grid-cols-2 gap-3 pt-2">
+                    <div>
+                        <label for="todo-repeat" class="block text-xs font-medium text-muji-muted mb-1">重複</label>
+                        <select id="todo-repeat" title="需先設定日期" class="w-full border border-muji-border rounded px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-muji-text">
+                            <option value="">不重複</option>
+                            <option value="daily">每天</option>
+                            <option value="weekly">每週</option>
+                            <option value="monthly">每月</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-muji-muted mb-1">Google 工作</label>
+                        <label class="flex items-center gap-1.5 h-[30px] text-xs text-muji-text cursor-pointer"><input type="checkbox" id="todo-sync-gcal" checked class="rounded text-muji-red focus:ring-muji-red"> 同步</label>
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-2 pt-3 border-t border-muji-border sticky bottom-0 bg-white -mx-6 px-6 -mb-6 pb-6">
+                    <button type="button" onclick="closeModal('todo-modal')" class="muji-btn">取消</button>
+                    <button type="submit" class="muji-btn muji-btn-primary">儲存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 7.2 NOTE MODAL -->
+    <div id="note-modal" class="fixed inset-0 bg-black/30 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4" onclick="if(event.target===this) closeModal('note-modal')">
+        <div class="bg-white rounded-lg max-w-lg w-full p-6 space-y-4 muji-card max-h-[90dvh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b border-muji-border pb-3">
+                <h3 id="note-modal-title" class="font-serif font-semibold text-base">新增隨記</h3>
+                <button onclick="closeModal('note-modal')" class="text-muji-muted hover:text-muji-text"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="note-form" onsubmit="handleSaveNote(event)" class="space-y-3 text-sm">
+                <input type="hidden" id="note-id">
+                <div>
+                    <label for="note-title" class="block text-xs font-medium text-muji-muted mb-1">標題</label>
+                    <input type="text" id="note-title" placeholder="隨記標題" class="w-full border border-muji-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-muji-text">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-muji-muted mb-1">內容</label>
+                    <div class="border border-muji-border rounded">
+                        <div class="bg-muji-paper p-1.5 flex flex-wrap gap-1 border-b border-muji-border text-xs">
+                            <button type="button" onclick="execEditorCommand('bold')" onmousedown="event.preventDefault()" class="px-2 py-1 bg-white border border-muji-border rounded font-semibold">B</button>
+                            <button type="button" onclick="execEditorCommand('italic')" onmousedown="event.preventDefault()" class="px-2 py-1 bg-white border border-muji-border rounded italic">I</button>
+                            <button type="button" onclick="execEditorCommand('underline')" onmousedown="event.preventDefault()" class="px-2 py-1 bg-white border border-muji-border rounded underline">U</button>
+                            <button type="button" onclick="execEditorCommand('strikeThrough')" onmousedown="event.preventDefault()" class="px-2 py-1 bg-white border border-muji-border rounded line-through">S</button>
+                            <button type="button" onclick="clearNoteFormatting()" onmousedown="event.preventDefault()" class="px-2 py-1 bg-white border border-muji-border rounded text-xs text-muji-muted" title="清除格式"><i class="fa-solid fa-text-slash"></i></button>
+                            <div class="flex items-center space-x-1 border-l border-muji-border pl-1.5 ml-1">
+                                <span onclick="execEditorColor('#2D2B2A')" onmousedown="event.preventDefault()" class="w-4 h-4 rounded-full bg-[#2D2B2A] cursor-pointer inline-block" title="炭灰"></span>
+                                <span onclick="execEditorColor('#8C2B2B')" onmousedown="event.preventDefault()" class="w-4 h-4 rounded-full bg-[#8C2B2B] cursor-pointer inline-block" title="臙脂紅"></span>
+                                <span onclick="execEditorColor('#A66E38')" onmousedown="event.preventDefault()" class="w-4 h-4 rounded-full bg-[#A66E38] cursor-pointer inline-block" title="赭黃"></span>
+                                <span onclick="execEditorColor('#6B705C')" onmousedown="event.preventDefault()" class="w-4 h-4 rounded-full bg-[#6B705C] cursor-pointer inline-block" title="苔綠"></span>
+                                <span onclick="execEditorColor('#2E4057')" onmousedown="event.preventDefault()" class="w-4 h-4 rounded-full bg-[#2E4057] cursor-pointer inline-block" title="藍灰"></span>
+                            </div>
+                        </div>
+                        <div id="note-editor" contenteditable="true" role="textbox" aria-multiline="true" aria-label="隨記內容" onpaste="handleEditorPaste(event)" class="p-3 min-h-[100px] text-sm focus:outline-none"></div>
+                    </div>
+                    <p class="hidden dark:block text-[11px] text-muji-muted mt-1">提示：深色模式下，較深的文字顏色（如炭灰）可能不易閱讀</p>
+                </div>
+
+                <div>
+                    <label for="note-image-file" class="block text-xs font-medium text-muji-muted mb-1">上傳圖片</label>
+                    <input type="file" id="note-image-file" accept="image/*" onchange="handleImageFileSelect(this, 'note-img-preview', 'note-image-data')" class="w-full text-xs text-muji-muted file:mr-2 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:bg-muji-paper file:text-muji-text">
+                    <input type="hidden" id="note-image-data">
+                    <div id="note-img-preview" class="mt-2 hidden relative w-20 h-20">
+                        <img alt="隨記圖片預覽" class="w-20 h-20 object-cover rounded border border-muji-border">
+                        <button type="button" onclick="clearImagePreview('note-img-preview', 'note-image-data', 'note-image-file')" class="absolute -top-2 -right-2 bg-muji-red text-white rounded-full w-5 h-5 flex items-center justify-center text-[11px]"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-muji-muted mb-1">標籤（選色後輸入，按 Enter 新增）</label>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <input type="text" id="note-tag-input" onkeydown="if(event.key==='Enter'){event.preventDefault(); addTagFromInput('note-tag-input','note-tag-chips');}" placeholder="例如：靈感、購物清單" class="flex-1 min-w-[7rem] border border-muji-border rounded px-3 py-1.5 text-xs">
+                        <div id="note-tag-chips-color-picker" class="flex gap-1.5 shrink-0"></div>
+                    </div>
+                    <div id="note-tag-chips" class="flex flex-wrap gap-1.5 mt-1.5"></div>
+                </div>
+
+                <div class="flex justify-end space-x-2 pt-3 border-t border-muji-border sticky bottom-0 bg-white -mx-6 px-6 -mb-6 pb-6">
+                    <button type="button" onclick="closeModal('note-modal')" class="muji-btn">取消</button>
+                    <button type="submit" class="muji-btn muji-btn-primary">儲存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 7.3 HABIT MODAL -->
+    <div id="habit-modal" class="fixed inset-0 bg-black/30 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4" onclick="if(event.target===this) closeModal('habit-modal')">
+        <div class="bg-white rounded-lg max-w-sm w-full p-6 space-y-4 muji-card max-h-[90dvh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b border-muji-border pb-3">
+                <h3 id="habit-modal-title" class="font-serif font-semibold text-base">新增習慣</h3>
+                <button onclick="closeModal('habit-modal')" class="text-muji-muted hover:text-muji-text"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="habit-form" onsubmit="handleSaveHabit(event)" class="space-y-3 text-sm">
+                <input type="hidden" id="habit-id">
+                <div>
+                    <label class="block text-xs font-medium text-muji-muted mb-1">符號圖示</label>
+                    <div id="habit-icon-grid" class="grid grid-cols-6 gap-1.5 p-2 border border-muji-border rounded max-h-32 overflow-y-auto"></div>
+                    <input type="hidden" id="habit-icon" value="fa:coffee">
+                    <div id="habit-icon-custom-wrap" class="hidden mt-2">
+                        <input type="text" id="habit-icon-custom-input" placeholder="輸入自訂符號/emoji" oninput="onHabitCustomIconInput()" class="w-full border border-muji-border rounded px-3 py-2 text-sm text-center">
+                    </div>
+                </div>
+                <div>
+                    <label for="habit-title" class="block text-xs font-medium text-muji-muted mb-1">習慣名稱<span class="text-muji-red/70 ml-0.5" title="必填">•</span></label>
+                    <input type="text" id="habit-title" required placeholder="例如：每日閱讀30分鐘" class="w-full border border-muji-border rounded px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label for="habit-freq" class="block text-xs font-medium text-muji-muted mb-1">頻率</label>
+                    <select id="habit-freq" onchange="toggleHabitFreqUI()" class="w-full border border-muji-border rounded px-3 py-2 text-sm bg-white">
+                        <option value="daily">每天</option>
+                        <option value="weekly">每週固定次數</option>
+                    </select>
+                </div>
+                <div id="habit-weekly-target-wrap" class="hidden">
+                    <label for="habit-weekly-target" class="block text-xs font-medium text-muji-muted mb-1">每週目標次數（不限定星期幾）</label>
+                    <input type="number" id="habit-weekly-target" min="1" max="7" value="3" class="w-full border border-muji-border rounded px-3 py-2 text-sm">
+                </div>
+                <div class="flex justify-end space-x-2 pt-3 border-t border-muji-border sticky bottom-0 bg-white -mx-6 px-6 -mb-6 pb-6">
+                    <button type="button" onclick="closeModal('habit-modal')" class="muji-btn">取消</button>
+                    <button type="submit" class="muji-btn muji-btn-primary">儲存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 7.4 DIARY MODAL -->
+    <div id="diary-modal" class="fixed inset-0 bg-black/30 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4" onclick="if(event.target===this) closeModal('diary-modal')">
+        <div class="bg-white rounded-lg max-w-xl w-full p-6 space-y-4 muji-card max-h-[90dvh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b border-muji-border pb-3">
+                <h3 id="diary-modal-title" class="font-serif font-semibold text-base">新增日記</h3>
+                <button onclick="closeModal('diary-modal')" class="text-muji-muted hover:text-muji-text"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="diary-form" onsubmit="handleSaveDiary(event)" class="space-y-3 text-sm">
+                <input type="hidden" id="diary-id">
+                <div>
+                    <label for="diary-title" class="block text-xs font-medium text-muji-muted mb-1">標題<span class="text-muji-red/70 ml-0.5" title="必填">•</span></label>
+                    <input type="text" id="diary-title" required placeholder="給今天下一個主題" class="w-full border border-muji-border rounded px-3 py-2 text-sm">
+                </div>
+                <div class="grid grid-cols-[minmax(0,1fr)_4rem_4rem] sm:grid-cols-[minmax(0,1fr)_6rem_6rem] gap-2">
+                    <div class="min-w-0">
+                        <label for="diary-datetime" class="block text-xs font-medium text-muji-muted mb-1">日期時間<span class="text-muji-red/70 ml-0.5" title="必填">•</span></label>
+                        <input type="datetime-local" id="diary-datetime" required class="w-full border border-muji-border rounded px-2 py-1.5 text-xs">
+                    </div>
+                    <div class="relative">
+                        <label class="block text-xs font-medium text-muji-muted mb-1">天氣</label>
+                        <input type="hidden" id="diary-weather" value="clear">
+                        <button type="button" onclick="toggleIconPicker('diary-weather')" class="w-full border border-muji-border rounded px-2 py-1.5 text-xs bg-white flex items-center justify-between">
+                            <span id="diary-weather-picker-label" class="flex items-center gap-1.5"></span>
+                            <i class="fa-solid fa-caret-down text-[11px] text-muji-muted"></i>
+                        </button>
+                        <div id="diary-weather-picker" class="icon-picker-panel hidden absolute z-20 mt-1 w-40 right-0 bg-white border border-muji-border rounded shadow-md p-1 max-h-48 overflow-y-auto"></div>
+                    </div>
+                    <div class="relative">
+                        <label class="block text-xs font-medium text-muji-muted mb-1">心情</label>
+                        <input type="hidden" id="diary-mood" value="happy">
+                        <button type="button" onclick="toggleIconPicker('diary-mood')" class="w-full border border-muji-border rounded px-2 py-1.5 text-xs bg-white flex items-center justify-between">
+                            <span id="diary-mood-picker-label" class="flex items-center gap-1.5"></span>
+                            <i class="fa-solid fa-caret-down text-[11px] text-muji-muted"></i>
+                        </button>
+                        <div id="diary-mood-picker" class="icon-picker-panel hidden absolute z-20 mt-1 w-40 right-0 bg-white border border-muji-border rounded shadow-md p-1 max-h-48 overflow-y-auto"></div>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label for="diary-person" class="block text-xs font-medium text-muji-muted mb-1">參與人員</label>
+                        <input type="text" id="diary-person" placeholder="獨立一人 / 友人" class="w-full border border-muji-border rounded px-3 py-1.5 text-xs">
+                    </div>
+                    <div>
+                        <label for="diary-location" class="block text-xs font-medium text-muji-muted mb-1">地點</label>
+                        <input type="text" id="diary-location" placeholder="咖啡館 / 家中" class="w-full border border-muji-border rounded px-3 py-1.5 text-xs">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-muji-muted mb-1">內容</label>
+                    <div class="border border-muji-border rounded">
+                        <div class="bg-muji-paper p-1.5 flex flex-wrap gap-1 border-b border-muji-border text-xs">
+                            <button type="button" onclick="execDiaryEditorCommand('bold')" onmousedown="event.preventDefault()" class="px-2 py-1 bg-white border border-muji-border rounded font-semibold">B</button>
+                            <button type="button" onclick="execDiaryEditorCommand('italic')" onmousedown="event.preventDefault()" class="px-2 py-1 bg-white border border-muji-border rounded italic">I</button>
+                            <button type="button" onclick="execDiaryEditorCommand('underline')" onmousedown="event.preventDefault()" class="px-2 py-1 bg-white border border-muji-border rounded underline">U</button>
+                            <button type="button" onclick="execDiaryEditorCommand('strikeThrough')" onmousedown="event.preventDefault()" class="px-2 py-1 bg-white border border-muji-border rounded line-through">S</button>
+                            <button type="button" onclick="clearDiaryFormatting()" onmousedown="event.preventDefault()" class="px-2 py-1 bg-white border border-muji-border rounded text-xs text-muji-muted" title="清除格式"><i class="fa-solid fa-text-slash"></i></button>
+                            <div class="flex items-center space-x-1 border-l border-muji-border pl-1.5 ml-1">
+                                <span onclick="execDiaryEditorColor('#2D2B2A')" onmousedown="event.preventDefault()" class="w-4 h-4 rounded-full bg-[#2D2B2A] cursor-pointer inline-block" title="炭灰"></span>
+                                <span onclick="execDiaryEditorColor('#8C2B2B')" onmousedown="event.preventDefault()" class="w-4 h-4 rounded-full bg-[#8C2B2B] cursor-pointer inline-block" title="臙脂紅"></span>
+                                <span onclick="execDiaryEditorColor('#A66E38')" onmousedown="event.preventDefault()" class="w-4 h-4 rounded-full bg-[#A66E38] cursor-pointer inline-block" title="赭黃"></span>
+                                <span onclick="execDiaryEditorColor('#6B705C')" onmousedown="event.preventDefault()" class="w-4 h-4 rounded-full bg-[#6B705C] cursor-pointer inline-block" title="苔綠"></span>
+                                <span onclick="execDiaryEditorColor('#2E4057')" onmousedown="event.preventDefault()" class="w-4 h-4 rounded-full bg-[#2E4057] cursor-pointer inline-block" title="藍灰"></span>
+                            </div>
+                        </div>
+                        <div id="diary-editor" contenteditable="true" role="textbox" aria-multiline="true" aria-label="日記內容" onpaste="handleEditorPaste(event)" class="p-3 min-h-[140px] text-sm focus:outline-none"></div>
+                    </div>
+                    <p class="hidden dark:block text-[11px] text-muji-muted mt-1">提示：深色模式下，較深的文字顏色（如炭灰）可能不易閱讀</p>
+                </div>
+
+                <div>
+                    <label for="diary-image-file" class="block text-xs font-medium text-muji-muted mb-1">上傳相片</label>
+                    <input type="file" id="diary-image-file" accept="image/*" onchange="handleImageFileSelect(this, 'diary-img-preview', 'diary-image-data')" class="w-full text-xs text-muji-muted file:mr-2 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:bg-muji-paper file:text-muji-text">
+                    <input type="hidden" id="diary-image-data">
+                    <div id="diary-img-preview" class="mt-2 hidden relative w-20 h-20">
+                        <img alt="日記圖片預覽" class="w-20 h-20 object-cover rounded border border-muji-border">
+                        <button type="button" onclick="clearImagePreview('diary-img-preview', 'diary-image-data', 'diary-image-file')" class="absolute -top-2 -right-2 bg-muji-red text-white rounded-full w-5 h-5 flex items-center justify-center text-[11px]"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-muji-muted mb-1">標籤（選色後輸入，按 Enter 新增）</label>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <input type="text" id="diary-tag-input" onkeydown="if(event.key==='Enter'){event.preventDefault(); addTagFromInput('diary-tag-input','diary-tag-chips');}" placeholder="例如：旅行、家人" class="flex-1 min-w-[7rem] border border-muji-border rounded px-3 py-1.5 text-xs">
+                        <div id="diary-tag-chips-color-picker" class="flex gap-1.5 shrink-0"></div>
+                    </div>
+                    <div id="diary-tag-chips" class="flex flex-wrap gap-1.5 mt-1.5"></div>
+                </div>
+
+                <div class="flex justify-end space-x-2 pt-3 border-t border-muji-border sticky bottom-0 bg-white -mx-6 px-6 -mb-6 pb-6">
+                    <button type="button" onclick="closeModal('diary-modal')" class="muji-btn">取消</button>
+                    <button type="submit" class="muji-btn muji-btn-primary">儲存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+<!-- 日記詳情檢視彈窗 (Modal) -->
+<div id="diary-view-modal" onclick="if(event.target===this)closeModal('diary-view-modal')" class="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+    <div class="muji-card bg-white dark:bg-zinc-900 w-full max-w-2xl max-h-[85dvh] flex flex-col overflow-hidden shadow-xl rounded-xl border border-muji-border">
+        <!-- 頂部標題與控制按鈕（右側包含無外框、無文字之編輯、刪除與關閉按鈕） -->
+        <div class="p-5 border-b border-muji-border flex justify-between items-start bg-muji-paper dark:bg-zinc-800/50">
+            <div class="min-w-0 pr-2">
+                <h3 id="diary-view-title" class="font-serif font-semibold text-base text-muji-text break-words"></h3>
+                <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muji-muted mt-1">
+                    <span id="diary-view-datetime"></span>
+                    <span id="diary-view-weather"></span>
+                    <span id="diary-view-mood"></span>
+                    <span id="diary-view-meta" class="contents">
+                        <span id="diary-view-person-wrap" class="hidden"><i class="fa-regular fa-user mr-1"></i><span id="diary-view-person"></span></span>
+                        <span id="diary-view-location-wrap" class="hidden"><i class="fa-solid fa-location-dot mr-1"></i><span id="diary-view-location"></span></span>
+                    </span>
+                    <span id="diary-view-tags"></span>
+                </div>
+            </div>
+            
+            <!-- 右側操作按鈕區：純圖示、無外框（列印、編輯、刪除、關閉） -->
+            <div class="flex items-center space-x-1">
+                <button id="diary-view-print-btn" class="p-1 flex items-center justify-center text-stone-400 hover:text-stone-800 dark:hover:text-stone-200 rounded transition" title="列印／匯出PDF">
+                    <i class="fa-solid fa-print text-sm"></i>
+                </button>
+                <button id="diary-view-edit-btn" class="flex items-center justify-center text-stone-400 hover:text-stone-800 dark:hover:text-stone-200 rounded transition" title="編輯日記">
+                    <i class="fa-solid fa-pen text-sm"></i>
+                </button>
+                <button id="diary-view-delete-btn" class="p-1 flex items-center justify-center text-stone-400 hover:text-muji-red rounded transition" title="刪除日記">
+                    <i class="fa-solid fa-trash text-sm"></i>
+                </button>
+                <button onclick="closeModal('diary-view-modal')" class="p-1 flex items-center justify-center text-stone-400 hover:text-stone-800 dark:hover:text-stone-200 rounded transition" title="關閉">
+                    <i class="fa-solid fa-xmark text-base"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- 內容區（可滾動） -->
+        <div class="p-6 overflow-y-auto space-y-4">
+            <!-- 圖片 display -->
+            <div id="diary-view-image-container" class="hidden">
+                <img id="diary-view-image" alt="日記照片" class="rounded-lg border border-muji-border max-h-96 w-full object-contain bg-muji-paper dark:bg-[#242220]">
+            </div>
+
+            <!-- 正文內容 -->
+            <div id="diary-view-content" class="rich-content text-sm leading-relaxed text-muji-text"></div>
+        </div>
+    </div>
+</div>
+
+    <!-- 7.5 EVENT MODAL -->
+    <div id="event-modal" class="fixed inset-0 bg-black/30 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4" onclick="if(event.target===this) closeModal('event-modal')">
+        <div class="bg-white rounded-lg max-w-lg w-full p-6 space-y-4 muji-card max-h-[90dvh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b border-muji-border pb-3">
+                <h3 id="event-modal-title" class="font-serif font-semibold text-base">新增行程</h3>
+                <button onclick="closeModal('event-modal')" class="text-muji-muted hover:text-muji-text"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="event-form" onsubmit="handleSaveEvent(event)" class="space-y-3 text-sm">
+                <input type="hidden" id="event-id">
+                <div>
+                    <label for="event-title" class="block text-xs font-medium text-muji-muted mb-1">行程<span class="text-muji-red/70 ml-0.5" title="必填">•</span></label>
+                    <input type="text" id="event-title" required placeholder="例如：專案企劃報告" class="w-full border border-muji-border rounded px-3 py-2 text-sm focus:outline-none">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label for="event-date" class="block text-xs font-medium text-muji-muted mb-1">日期<span class="text-muji-red/70 ml-0.5" title="必填">•</span></label>
+                        <input type="date" id="event-date" required class="w-full border border-muji-border rounded px-3 py-1.5 text-xs">
+                    </div>
+                    <div>
+                        <label for="event-time" class="block text-xs font-medium text-muji-muted mb-1">時間 (可不填)</label>
+                        <input type="time" id="event-time" class="w-full border border-muji-border rounded px-3 py-1.5 text-xs">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label for="event-person" class="block text-xs font-medium text-muji-muted mb-1">參與人員</label>
+                        <input type="text" id="event-person" placeholder="對象 / 團隊" class="w-full border border-muji-border rounded px-3 py-1.5 text-xs">
+                    </div>
+                    <div>
+                        <label for="event-location" class="block text-xs font-medium text-muji-muted mb-1">地點</label>
+                        <input type="text" id="event-location" placeholder="地點" class="w-full border border-muji-border rounded px-3 py-1.5 text-xs">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-muji-muted mb-1">標籤顏色</label>
+                    <input type="hidden" id="event-color" value="#8C2B2B">
+                    <div class="flex gap-2.5" id="event-color-picker">
+                        <button type="button" onclick="selectEventColor('#8C2B2B')" data-color-btn="#8C2B2B" class="w-6 h-6 rounded-full bg-[#8C2B2B] transition-all" title="臙脂紅"></button>
+                        <button type="button" onclick="selectEventColor('#2D2B2A')" data-color-btn="#2D2B2A" class="w-6 h-6 rounded-full bg-[#2D2B2A] transition-all" title="炭灰"></button>
+                        <button type="button" onclick="selectEventColor('#A66E38')" data-color-btn="#A66E38" class="w-6 h-6 rounded-full bg-[#A66E38] transition-all" title="赭黃"></button>
+                        <button type="button" onclick="selectEventColor('#6B705C')" data-color-btn="#6B705C" class="w-6 h-6 rounded-full bg-[#6B705C] transition-all" title="苔綠"></button>
+                        <button type="button" onclick="selectEventColor('#2E4057')" data-color-btn="#2E4057" class="w-6 h-6 rounded-full bg-[#2E4057] transition-all" title="藍灰"></button>
+                    </div>
+                </div>
+                <div>
+                    <label for="event-image-file" class="block text-xs font-medium text-muji-muted mb-1">上傳圖片</label>
+                    <input type="file" id="event-image-file" accept="image/*" onchange="handleImageFileSelect(this, 'event-img-preview', 'event-image-data')" class="w-full text-xs text-muji-muted file:mr-2 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:bg-muji-paper file:text-muji-text">
+                    <input type="hidden" id="event-image-data">
+                    <div id="event-img-preview" class="mt-2 hidden relative w-20 h-20">
+                        <img alt="行程圖片預覽" class="w-20 h-20 object-cover rounded border border-muji-border">
+                        <button type="button" onclick="clearImagePreview('event-img-preview', 'event-image-data', 'event-image-file')" class="absolute -top-2 -right-2 bg-muji-red text-white rounded-full w-5 h-5 flex items-center justify-center text-[11px]"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+                </div>
+                <div class="grid grid-cols-3 gap-2 pt-2">
+                    <div>
+                        <label for="event-repeat" class="block text-xs font-medium text-muji-muted mb-1">重複</label>
+                        <select id="event-repeat" onchange="onEventRepeatChange()" class="w-full border border-muji-border rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-muji-text">
+                            <option value="">不重複</option>
+                            <option value="daily">每天</option>
+                            <option value="weekly">每週</option>
+                            <option value="monthly">每月</option>
+                            <option value="yearly">每年</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="event-reminder" class="block text-xs font-medium text-muji-muted mb-1">提醒</label>
+                        <select id="event-reminder" class="w-full border border-muji-border rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-muji-text">
+                            <option value="">預設</option>
+                            <option value="none">不提醒</option>
+                            <option value="0">準時</option>
+                            <option value="10">10 分前</option>
+                            <option value="30">30 分前</option>
+                            <option value="60">1 小時前</option>
+                            <option value="1440">1 天前</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-muji-muted mb-1">Google 日曆</label>
+                        <label class="flex items-center gap-1.5 h-[30px] text-xs text-muji-text cursor-pointer"><input type="checkbox" id="event-sync-gcal" checked class="rounded text-muji-red"> 同步</label>
+                    </div>
+                </div>
+                <div id="event-repeat-until-wrap" class="hidden">
+                    <label for="event-repeat-until" class="block text-xs font-medium text-muji-muted mb-1">重複到（可留空）</label>
+                    <input type="date" id="event-repeat-until" class="w-full border border-muji-border rounded px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-muji-text">
+                </div>
+                <p class="text-[11px] text-muji-muted -mt-1">提醒僅在同步 Google 日曆時生效。</p>
+                <p id="event-repeat-hint" class="hidden text-[11px] text-muji-muted">重複行程只存在手帳，不會同步到 Google 日曆；刪除會移除整個系列。</p>
+                <div class="flex justify-end space-x-2 pt-3 border-t border-muji-border sticky bottom-0 bg-white -mx-6 px-6 -mb-6 pb-6">
+                    <button type="button" onclick="closeModal('event-modal')" class="muji-btn">取消</button>
+                    <button type="submit" class="muji-btn muji-btn-primary">儲存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+<!-- ========================================== -->
+<!-- [模組 7 補充] 當日行程檢視彈窗 (Modal: Day Events Detail) -->
+<!-- 請將此區塊放入 [模組 7] 全局彈窗集中末端 -->
+<!-- ========================================== -->
+<div id="modal-day-events" onclick="if(event.target===this)closeModal('modal-day-events')" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+    <div class="bg-white dark:bg-[#2F2C29] rounded-xl shadow-xl w-full max-w-lg overflow-hidden border border-muji-border animate-fade-in-up">
+        <div class="px-5 py-4 border-b border-muji-border flex justify-between items-center bg-muji-paper">
+            <div>
+                <h3 id="modal-day-events-title" class="font-serif font-semibold text-sm text-muji-text">當日行程清單</h3>
+                <p id="modal-day-events-subtitle" class="text-xs text-muji-muted mt-0.5"></p>
+            </div>
+            <button onclick="closeDayEventsModal()" class="text-muji-muted hover:text-muji-text text-sm p-1 transition-colors">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <div id="modal-day-events-list" class="p-5 space-y-3 max-h-[60dvh] overflow-y-auto"></div>
+        <div class="px-5 py-3 border-t border-muji-border bg-muji-paper flex justify-between items-center">
+            <button id="modal-day-add-btn" class="muji-btn muji-btn-primary text-xs px-3 py-1.5 rounded flex items-center gap-1">
+                <i class="fa-solid fa-plus text-xs"></i> 新增此日行程
+            </button>
+            <button onclick="closeDayEventsModal()" class="px-4 py-1.5 text-xs bg-white dark:bg-[#2F2C29] border border-muji-border rounded text-muji-text hover:bg-stone-100 transition-colors">
+                關閉
+            </button>
+        </div>
+    </div>
+</div>
+
+    <!-- 7.5b DIARY EXPORT PDF MODAL -->
+    <div id="diary-export-modal" class="fixed inset-0 bg-black/30 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4" onclick="if(event.target===this) closeModal('diary-export-modal')">
+        <div class="bg-white rounded-lg max-w-sm w-full p-6 space-y-4 muji-card">
+            <div class="flex justify-between items-center border-b border-muji-border pb-3">
+                <h3 class="font-serif font-semibold text-base">匯出日記PDF</h3>
+                <button onclick="closeModal('diary-export-modal')" class="text-muji-muted hover:text-muji-text"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="space-y-3 text-sm">
+                <p class="text-xs text-muji-muted">選擇要匯出的日期範圍，會開啟瀏覽器列印畫面，選擇「另存為PDF」即可。</p>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label for="diary-export-start" class="block text-xs font-medium text-muji-muted mb-1">起始日期</label>
+                        <input type="date" id="diary-export-start" class="w-full border border-muji-border rounded px-3 py-2 text-xs">
+                    </div>
+                    <div>
+                        <label for="diary-export-end" class="block text-xs font-medium text-muji-muted mb-1">結束日期</label>
+                        <input type="date" id="diary-export-end" class="w-full border border-muji-border rounded px-3 py-2 text-xs">
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-2 pt-3 border-t border-muji-border sticky bottom-0 bg-white -mx-6 px-6 -mb-6 pb-6">
+                    <button type="button" onclick="closeModal('diary-export-modal')" class="muji-btn">取消</button>
+                    <button type="button" onclick="printDiaryRange()" class="muji-btn muji-btn-primary">產生PDF列印</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 7.6 APP SETTINGS MODAL -->
+    <!-- 回收桶 -->
+    <div id="ui-dialog" role="alertdialog" aria-modal="true" aria-labelledby="ui-dialog-msg" onclick="if(event.target===this)uiDialogClose(false)">
+        <div class="ui-dialog-box">
+            <p id="ui-dialog-msg"></p>
+            <div class="ui-dialog-actions">
+                <button type="button" id="ui-dialog-cancel" onclick="uiDialogClose(false)">取消</button>
+                <button type="button" id="ui-dialog-ok" class="ui-ok" onclick="uiDialogClose(true)">確定</button>
+            </div>
+        </div>
+    </div>
+    <!-- 登入視窗：只有 GitHub Pages 版（config.js 有 API_URL）在沒有有效 token 時才會開啟 -->
+    <div id="login-overlay" role="dialog" aria-modal="true" aria-label="登入">
+        <form class="login-box" onsubmit="submitLogin(event)">
+            <h3 class="font-serif font-semibold text-base mb-3">MK手帳</h3>
+            <input type="text" autocomplete="username" value="mk" class="hidden" aria-hidden="true" tabindex="-1">
+            <label for="login-password" class="block text-xs font-medium text-muji-muted mb-1">密碼</label>
+            <input type="password" id="login-password" autocomplete="current-password" required class="w-full border border-muji-border rounded px-3 py-2 text-sm">
+            <p id="login-msg" class="text-xs text-muji-red mt-2" style="min-height:1rem" role="alert"></p>
+            <div class="flex justify-end mt-3"><button type="submit" id="login-submit" class="muji-btn muji-btn-primary">登入</button></div>
+        </form>
+    </div>
+    <div id="trash-modal" class="fixed inset-0 bg-black/30 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4" onclick="if(event.target===this) closeModal('trash-modal')">
+        <div class="bg-white rounded-lg max-w-md w-full p-6 space-y-3 muji-card max-h-[85dvh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b border-muji-border pb-3">
+                <h3 class="font-serif font-semibold text-base">回收桶</h3>
+                <div class="flex items-center space-x-2">
+                    <button onclick="emptyTrash()" class="text-xs px-2 py-1 rounded border border-muji-border text-muji-red">清空</button>
+                    <button onclick="closeModal('trash-modal')" class="p-1 text-muji-muted"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+            </div>
+            <p class="text-xs text-muji-muted">刪除後保留 30 天，可在這裡復原（跨裝置共用）</p>
+            <div id="trash-filter-bar" class="flex flex-wrap gap-1"></div>
+            <div id="trash-list" class="space-y-2"></div>
+        </div>
+    </div>
+
+    <div id="settings-modal" class="fixed inset-0 bg-black/30 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4" onclick="if(event.target===this) closeModal('settings-modal')">
+        <div class="bg-white rounded-lg max-w-md w-full p-6 space-y-4 muji-card max-h-[90dvh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b border-muji-border pb-3">
+                <h3 class="font-serif font-semibold text-base flex items-center gap-2">
+                    <i class="fa-solid fa-gear text-muji-muted"></i> 設定
+                </h3>
+                <button onclick="closeModal('settings-modal')" class="text-muji-muted hover:text-muji-text"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            
+            <div class="space-y-4 text-xs">
+                <!-- GAS Web App Sync -->
+                <div class="space-y-1.5">
+                    <label class="block font-medium text-muji-text">同步 Google 雲端</label>
+                    <p class="text-xs text-muji-muted">資料異動時自動備份到試算表，並同步日曆與工作。</p>
+                    <div id="gas-sync-status" class="text-xs text-muji-muted hidden flex items-center gap-1.5"></div>
+                </div>
+
+                <!-- Google Calendar 讀取顯示設定 -->
+                <div class="pt-3 border-t border-muji-border space-y-1.5">
+                    <label class="block font-medium text-muji-text">同步 Google 日曆</label>
+                    <p class="text-xs text-muji-muted">勾選要讀進手帳的日曆（可複選），行程可編輯、刪除並回寫。</p>
+                    <button type="button" onclick="refreshAvailableCalendars()" class="muji-btn text-xs w-full justify-center"><i class="fa-solid fa-rotate"></i> 更新日曆清單</button>
+                    <div id="calendar-checklist-container" class="max-h-40 overflow-y-auto border border-muji-border rounded p-2">
+                        <p class="text-xs text-muji-muted">按上方按鈕讀取日曆清單</p>
+                    </div>
+                </div>
+
+                <!-- Weather / AQI Location -->
+                <div class="pt-3 border-t border-muji-border space-y-1.5">
+                    <label class="block font-medium text-muji-text">天氣與空品地點</label>
+                    <p class="text-xs text-muji-muted">預設用裝置定位；也可手動指定，找不到時退回台中市東區。</p>
+                    <div id="geo-detect-status" class="hidden text-[11px] text-muji-red pt-0.5"></div>
+                    <div class="grid grid-cols-3 gap-2 pt-1">
+                        <button type="button" onclick="requestGeolocationAndRefresh()" class="muji-btn text-xs justify-center px-1" title="使用目前裝置定位"><i class="fa-solid fa-location-crosshairs"></i> 定位</button>
+                        <select id="weather-city-select" onchange="onWeatherCitySelectChange()" class="w-full border border-muji-border rounded px-3 py-2 text-xs bg-white"></select>
+                        <select id="weather-district-select" class="w-full border border-muji-border rounded px-3 py-2 text-xs bg-white"></select>
+                    </div>
+                </div>
+
+                <!-- Backup & Restore -->
+                <div class="pt-3 border-t border-muji-border space-y-2">
+                    <label class="block font-medium text-muji-text">本機資料</label>
+                    <p id="local-storage-usage" class="text-xs text-muji-muted"></p>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button onclick="exportDataJSON()" class="muji-btn text-xs justify-center px-1" title="匯出 JSON 備份"><i class="fa-solid fa-download"></i> 匯出</button>
+                        <button onclick="triggerImportJSON()" class="muji-btn text-xs justify-center px-1" title="匯入 JSON 備份"><i class="fa-solid fa-upload"></i> 匯入</button>
+                        <button onclick="clearAllData()" class="muji-btn muji-btn-danger text-xs justify-center px-1" title="清除本機資料（雲端資料會重新同步回來）"><i class="fa-solid fa-trash"></i> 清除</button>
+                        <input type="file" id="import-json-file" accept=".json" class="hidden" onchange="importDataJSON(this)">
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-end space-x-2 pt-3 border-t border-muji-border sticky bottom-0 bg-white -mx-6 px-6 -mb-6 pb-6">
+                <button onclick="closeModal('settings-modal')" class="muji-btn">取消</button>
+                <button onclick="saveSettings()" class="muji-btn muji-btn-primary">儲存設定</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 日記匯出PDF專用容器，平常隱藏，列印時才顯示（見#print-area的CSS規則） -->
+    <div id="print-area"></div>
+
+    <!-- 圖片放大檢視層：待辦/隨記/日行程的縮圖點擊後在這裡看大圖，點任意處關閉 -->
+    <div id="image-lightbox" class="fixed inset-0 bg-black/80 hidden z-50 flex items-center justify-center p-4 cursor-zoom-out" onclick="closeModal('image-lightbox')">
+        <img id="image-lightbox-img" src="" alt="放大圖片" class="max-w-full max-h-full object-contain rounded-lg">
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- MODULE 8 & 9: JAVASCRIPT CORE ENGINE & LOGIC CONTROLLERS          -->
+    <!-- ================================================================= -->
+    <script src="config.js"></script>
+    <script src="core.js?v=202611231706"></script>
+    <script src="features.js?v=202611231706"></script>
+    <script src="sync.js?v=202611231706"></script>
+    <!-- 右下浮動新增鈕：依目前分頁新增待辦／日記／行程 -->
+    <button type="button" id="back-to-top-btn" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="回到頁首" aria-label="回到頁首" class="hidden fixed right-4 bottom-[8.5rem] sm:bottom-20 z-30 w-12 h-12 rounded-full bg-white text-muji-text border border-muji-border shadow-lg items-center justify-center text-lg hover:bg-muji-paper"><i class="fa-solid fa-chevron-up"></i></button>
+    <button type="button" onclick="fabAdd()" title="新增" aria-label="新增" class="fixed right-4 bottom-20 sm:bottom-6 z-30 w-12 h-12 rounded-full bg-muji-red text-white shadow-lg flex items-center justify-center text-lg hover:opacity-90"><i class="fa-solid fa-plus"></i></button>
+<script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});</script>
+</body>
+</html>
