@@ -1,5 +1,5 @@
-// 建置：202611231706
-const CACHE = 'mk-shell-202611231706';
+// 建置：202611241149
+const CACHE = 'mk-shell-202611241149';
 const SHELL = ['./', 'index.html', 'style.css', 'core.js', 'features.js', 'sync.js', 'config.js', 'manifest.webmanifest', 'icons/icon-192.png'];
 const CDN_HOSTS = ['cdnjs.cloudflare.com', 'fonts.googleapis.com', 'fonts.gstatic.com'];
 

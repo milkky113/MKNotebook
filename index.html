@@ -29,7 +29,7 @@
     <!-- MODULE 1: STYLES & THEME CONFIGURATION                          -->
     <!-- ================================================================= -->
 
-    <link rel="stylesheet" href="style.css?v=202611231706">
+    <link rel="stylesheet" href="style.css?v=202611241149">
 </head>
 <body class="min-h-screen flex flex-col antialiased selection:bg-muji-paper selection:text-muji-red overflow-x-hidden">
 
@@ -935,15 +935,15 @@
             </div>
         </div>
     </div>
-    <!-- 登入視窗：只有 GitHub Pages 版（config.js 有 API_URL）在沒有有效 token 時才會開啟 -->
-    <div id="login-overlay" role="dialog" aria-modal="true" aria-label="登入">
+    <!-- 登入畫面：只有 GitHub Pages 版（config.js 有 API_URL）在沒有有效 token 時才會開啟。role 用 alertdialog：避免被「彈窗開啟時鎖住背景捲動」的邏輯（只認 role=dialog）誤判，登入後頁面就鎖死 -->
+    <div id="login-overlay" role="alertdialog" aria-modal="true" aria-label="登入">
         <form class="login-box" onsubmit="submitLogin(event)">
-            <h3 class="font-serif font-semibold text-base mb-3">MK手帳</h3>
+            <svg class="login-logo" viewBox="0 0 64 64" width="64" height="64" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#8C2B2B"/><path fill="#FFFFFF" d="M32 20C26 16 16 15 13 18L13 43C16 40 26 41 32 45C38 41 48 40 51 43L51 18C48 15 38 16 32 20Z"/></svg>
+            <h3 class="login-title font-serif">MK手帳</h3>
             <input type="text" autocomplete="username" value="mk" class="hidden" aria-hidden="true" tabindex="-1">
-            <label for="login-password" class="block text-xs font-medium text-muji-muted mb-1">密碼</label>
-            <input type="password" id="login-password" autocomplete="current-password" required class="w-full border border-muji-border rounded px-3 py-2 text-sm">
-            <p id="login-msg" class="text-xs text-muji-red mt-2" style="min-height:1rem" role="alert"></p>
-            <div class="flex justify-end mt-3"><button type="submit" id="login-submit" class="muji-btn muji-btn-primary">登入</button></div>
+            <input type="password" id="login-password" class="login-input" placeholder="密碼" aria-label="密碼" autocomplete="current-password" required>
+            <p id="login-msg" class="login-msg text-xs text-muji-red" role="alert"></p>
+            <button type="submit" id="login-submit" class="muji-btn muji-btn-primary login-submit">登入</button>
         </form>
     </div>
     <div id="trash-modal" class="fixed inset-0 bg-black/30 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4" onclick="if(event.target===this) closeModal('trash-modal')">
@@ -1032,9 +1032,9 @@
     <!-- MODULE 8 & 9: JAVASCRIPT CORE ENGINE & LOGIC CONTROLLERS          -->
     <!-- ================================================================= -->
     <script src="config.js"></script>
-    <script src="core.js?v=202611231706"></script>
-    <script src="features.js?v=202611231706"></script>
-    <script src="sync.js?v=202611231706"></script>
+    <script src="core.js?v=202611241149"></script>
+    <script src="features.js?v=202611241149"></script>
+    <script src="sync.js?v=202611241149"></script>
     <!-- 右下浮動新增鈕：依目前分頁新增待辦／日記／行程 -->
     <button type="button" id="back-to-top-btn" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="回到頁首" aria-label="回到頁首" class="hidden fixed right-4 bottom-[8.5rem] sm:bottom-20 z-30 w-12 h-12 rounded-full bg-white text-muji-text border border-muji-border shadow-lg items-center justify-center text-lg hover:bg-muji-paper"><i class="fa-solid fa-chevron-up"></i></button>
     <button type="button" onclick="fabAdd()" title="新增" aria-label="新增" class="fixed right-4 bottom-20 sm:bottom-6 z-30 w-12 h-12 rounded-full bg-muji-red text-white shadow-lg flex items-center justify-center text-lg hover:opacity-90"><i class="fa-solid fa-plus"></i></button>
